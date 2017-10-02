@@ -1,0 +1,76 @@
+public String[] evaluateSimpleExpression(String expression, String operation, int countOperation) {
+        String[] resultArray = new String[2];
+        String[] expressionParts = new String[2];
+        Double result = 0d;
+
+        if (expression.startsWith("(") && expression.endsWith(")")) {
+            try {
+                result = Double.parseDouble(expression.replace("(", "").replace(")", ""));
+            } catch (Exception e) {
+                expression = expression.replace("(", "").replace(")", "");
+            }
+        }
+
+        //if (expression.startsWith("-") || expression.startsWith("(-")) countOperation++;
+
+        if (operation.equals("^")) {
+            expressionParts = expression.split("\\" + operation);
+            result = Math.pow(Double.parseDouble(expressionParts[0]), Double.parseDouble(expressionParts[1]));
+        }
+
+        if (operation.equals("*")) {
+            expressionParts = expression.split("\\" + operation);
+            result = Double.parseDouble(expressionParts[0]) * Double.parseDouble(expressionParts[1]);
+        }
+
+        if (operation.equals("/")) {
+            expressionParts = expression.split(operation);
+            result = Double.parseDouble(expressionParts[0]) / Double.parseDouble(expressionParts[1]);
+        }
+
+        if (operation.equals("+")) {
+            expressionParts = expression.split("\\" + operation);
+            result = Double.parseDouble(expressionParts[0]) + Double.parseDouble(expressionParts[1]);
+            if (Double.parseDouble(expressionParts[0]) < 0) countOperation++;
+        }
+
+        if (operation.equals("-")) {
+            expressionParts[0] = expression.substring(0, expression.lastIndexOf("-"));
+            expressionParts[1] = expression.substring(expression.lastIndexOf("-") + 1, expression.length());
+            //expressionParts = expression.split("\\"+operation);
+            result = Double.parseDouble(expressionParts[0]) - Double.parseDouble(expressionParts[1]);
+            if (Double.parseDouble(expressionParts[0]) < 0) countOperation++;
+        }
+
+        if (operation.equals("sin")) {
+            result = Math.sin(Math.toRadians(Double.parseDouble(expression.replace("sin", "").replace("(", "").replace(")", ""))));
+        }
+
+        if (operation.equals("cos")) {
+            result = Math.cos(Math.toRadians(Double.parseDouble(expression.replace("cos", "").replace("(", "").replace(")", ""))));
+        }
+
+        if (operation.equals("tan")) {
+            result = Math.tan(Math.toRadians(Double.parseDouble(expression.replace("tan", "").replace("(", "").replace(")", ""))));
+        }
+
+        countOperation++;
+
+        DecimalFormat df = new DecimalFormat("#0.##");
+        resultArray[0] = df.format(result);
+        resultArray[1] = String.valueOf(countOperation);
+
+        return resultArray;
+    }
+
+    public String[] getSubexpressionByPattern(String expression, String pattern) {
+        String[] result = new String[3];
+        Matcher m = Pattern.compile(pattern).matcher(expression);
+        if (m.find()) {
+            result[0] = m.group();
+            result[1] = m.start() + "";
+            result[2] = result[0].length() + "";
+            return result;
+        }
+        return null;
+    }

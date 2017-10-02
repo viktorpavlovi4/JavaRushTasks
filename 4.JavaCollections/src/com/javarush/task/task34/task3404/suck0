@@ -1,0 +1,211 @@
+public void recursion(final String expression, int countOperation) {
+        //implement
+        String newExpression = expression.replaceAll(" ", "").replaceAll("[(]", "|(").replaceAll("[)]", ")|");
+        if (newExpression.matches("^-?\\d+(?:\\.\\d+)?$") || newExpression.matches("^\\d+$")){
+            double result = new java.math.BigDecimal(Double.parseDouble(newExpression))
+                    .setScale(2, java.math.RoundingMode.HALF_UP).doubleValue();
+            String stringResult = String.valueOf(result);
+            System.out.print(stringResult.endsWith(".0")
+                    ? stringResult.substring(0, newExpression.indexOf('.'))
+                    : stringResult);
+            if (countOperation==0) System.out.println(" " + 0);
+            return;
+        }
+        int parCount = countSubExps(newExpression);
+        if(parCount>0){
+            String[] subExpressions = newExpression.split("[|]");
+            String subExpression = subExpressions[parCount];
+            int expressionIndex = 0;
+            for (int i = 0; i < subExpressions.length; i++){
+                String exp = subExpressions[i];
+                if (exp.contains("(")
+                        && exp.contains(")")
+                        && !exp.substring(1, exp.length()-1).contains("(")
+                        && !exp.substring(1, exp.length()-1).contains(")")){
+                    subExpression = exp;
+                    expressionIndex = i;
+                }
+            }
+            String stringResult = subExpressions[expressionIndex] = calculateExpression(subExpression);
+            double doubleResult = Double.parseDouble(stringResult);
+            if (subExpressions[expressionIndex-1].endsWith("sin")){
+                doubleResult = Math.sin(Math.toRadians(doubleResult));
+                subExpressions[expressionIndex] = String.valueOf(doubleResult);
+                subExpressions[expressionIndex-1] = subExpressions[expressionIndex-1].substring(0, subExpressions[expressionIndex-1].length()-3);
+            }
+            else if (subExpressions[parCount-1].endsWith("cos")){
+                doubleResult = Math.cos(Math.toRadians(doubleResult));
+                subExpressions[expressionIndex] = String.valueOf(doubleResult);
+                subExpressions[expressionIndex-1] = subExpressions[expressionIndex-1].substring(0, subExpressions[expressionIndex - 1].length()-3);
+            }
+            else if (subExpressions[parCount-1].endsWith("tan")){
+                doubleResult = Math.tan(Math.toRadians(doubleResult));
+                subExpressions[expressionIndex] = String.valueOf(doubleResult);
+                subExpressions[expressionIndex-1] = subExpressions[expressionIndex-1].substring(0, subExpressions[expressionIndex - 1].length() - 3);
+            }
+            newExpression = getNewExp(subExpressions);
+            recursion(newExpression, ++countOperation);
+        }
+        else{
+            newExpression = calculateExpression(newExpression);
+            recursion(newExpression, ++countOperation);
+        }
+        int ops = 0;
+        for (Character character : expression.toCharArray()){
+            if (String.valueOf(character).matches("[-+*^/ts]")){
+                ops++;
+            }
+        }
+        if (countOperation == 1){
+            System.out.println(" " + ops);
+        }
+    }
+
+    private String calculateExpression(String expression){
+        String newExpression = expression.replaceAll("[()]", "").replaceAll("--", "+").replaceAll("[+]-", "-");
+        if (newExpression.startsWith("+")) newExpression = newExpression.substring(1);
+        if (newExpression.matches("^-?\\d+(?:\\.\\d+)?$") || newExpression.matches("^-?\\d+$")){
+            return newExpression;
+        }
+        ArrayList<String> numbers = new ArrayList<>(Arrays.asList(newExpression.split("[-+*/^]")));
+        ArrayList<String> operators = new ArrayList<>(Arrays.asList(newExpression.split("\\d+(?:\\.\\d+)?")));
+        for (int i = 0; i < numbers.size(); i++){
+            if (numbers.get(i).equals("")) numbers.remove(i);
+        }
+        for (int i = 0; i < operators.size(); i++){
+            if (operators.get(i).equals("")) operators.remove(i);
+        }
+        if(newExpression.startsWith("-") && operators.size()>=2 && operators.get(1).contains("^")) {
+            numbers.add(0, "0");
+        }
+        if(newExpression.startsWith("-") && operators.size()>=2 && !operators.get(1).contains("^")) {
+            operators.remove(0);
+            numbers.set(0, "-" + numbers.get(0));
+        }
+        for (int i = 0; i < operators.size(); i++){
+            if (operators.get(i).equals("*+") || operators.get(i).equals("+*")) operators.set(i, "*");
+            if (operators.get(i).equals("/+") || operators.get(i).equals("+/")) operators.set(i, "/");
+            if (operators.get(i).equals("^+") || operators.get(i).equals("+^")) operators.set(i, "^");
+        }
+        for (int i = 0; i < operators.size(); i++){
+            if (operators.get(i).equals("*-"))
+            {
+                operators.set(i, "*");
+                numbers.set(i+1, "-" + numbers.get(i+1));
+            }
+            if (operators.get(i).equals("/-"))
+            {
+                operators.set(i, "/");
+                numbers.set(i+1, "-" + numbers.get(i+1));
+            }
+            if (operators.get(i).equals("^-"))
+            {
+                operators.set(i, "^");
+                numbers.set(i+1, "-" + numbers.get(i+1));
+            }
+        }
+        for (int i = 0; i < numbers.size(); i++){
+            if (numbers.get(i).contains(".") && numbers.get(i).substring(numbers.get(i).indexOf('.')).length()>5)
+            {
+                double roundedValue = new java.math.BigDecimal(Double.parseDouble(numbers.get(i))).setScale(2, java.math.RoundingMode.HALF_UP).doubleValue();
+                numbers.set(i, String.valueOf(roundedValue));
+            }
+        }
+        for (int i = 0; i < operators.size(); i++)
+        {
+            int k = i;
+            int j = k + 1;
+            if (operators.get(i).equals("^"))
+            {
+                double first = Double.parseDouble(numbers.get(k));
+                double second = Double.parseDouble(numbers.get(j));
+                double result = Math.pow(first, second);
+                operators.remove(i);
+                numbers.remove(k);
+                numbers.remove(k);
+                numbers.add(k, String.valueOf(result));
+                if (operators.size() == 0) break;
+            }
+        }
+        while(operators.size() != 0)
+        {
+            for (int i = 0; i < operators.size(); i++)
+            {
+                int k = i;
+                int j = k + 1;
+                int l = k - 1;
+                if (i != 0 && (operators.get(l).equals("*") || operators.get(l).equals("/")))
+                {
+                    i = l;
+                    k = i;
+                    j = k + 1;
+                }
+                if (operators.get(i).equals("/"))
+                {
+                    double result = Double.parseDouble(numbers.get(k)) / Double.parseDouble(numbers.get(j));
+                    operators.remove(i);
+                    numbers.remove(k);
+                    numbers.remove(k);
+                    numbers.add(k, String.valueOf(result));
+                    i = 0;
+                    if (operators.size() == 0) break;
+                }
+                if (operators.get(i).equals("*"))
+                {
+                    double result = Double.parseDouble(numbers.get(k)) * Double.parseDouble(numbers.get(j));
+                    operators.remove(i);
+                    numbers.remove(k);
+                    numbers.remove(k);
+                    numbers.add(k, String.valueOf(result));
+                    i = 0;
+                    if (operators.size() == 0) break;
+                }
+            }
+            if (!operators.contains("^") && !operators.contains("*") && !operators.contains("/"))
+            {
+                for (int i = 0; i < operators.size(); i++)
+                {
+                    int k = i;
+                    int j = k + 1;
+                    if (operators.get(i).equals("+"))
+                    {
+                        double result = Double.parseDouble(numbers.get(k)) + Double.parseDouble(numbers.get(j));
+                        operators.remove(i);
+                        numbers.remove(k);
+                        numbers.remove(k);
+                        numbers.add(k, String.valueOf(result));
+                        i = 0;
+                        if (operators.size() == 0) break;
+                    }
+                    if (operators.get(i).equals("-"))
+                    {
+                        double result = Double.parseDouble(numbers.get(k)) - Double.parseDouble(numbers.get(j));
+                        operators.remove(i);
+                        numbers.remove(k);
+                        numbers.remove(k);
+                        numbers.add(k, String.valueOf(result));
+                        i = 0;
+                        if (operators.size() == 0) break;
+                    }
+                }
+            }
+        }
+        return numbers.get(0);
+    }
+
+    private String getNewExp(String[] arr){
+        String res = "";
+        for (String part : arr){
+            res += part;
+        }
+        return res;
+    }
+    private int countSubExps(String expression){
+        int parCount = 0;
+        for (Character character : expression.toCharArray()){
+            if (character == '('){
+                parCount++;
+            }
+        }
+        return parCount;
+    }
